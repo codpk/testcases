@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------* \
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (12 0 0);
+
+boundaryField
+{
+    inlet
+    {
+        type            codedFixedValue;
+        value          $internalField;
+
+        name     parabolicvelocity;
+        code
+        #{
+           scalar Umax = 12, h = 0.00425;
+           const fvPatch& boundaryPatch = patch();
+           vectorField& field = *this;
+           forAll(boundaryPatch, faceI)
+           {
+            field[faceI] = vector(1.5*Umax*(1 - Foam::pow(boundaryPatch.Cf()[faceI].y()/h,2)),0,0);
+           }
+                 
+        #};
+          
+           codeOptions
+        #{
+                -I$(LIB_SRC)/finiteVolume/lnInclude\
+                -I$(LIB_SRC)/meshTools/lnInclude
+        #};
+           codeInclude  
+        #{
+                 #include "fvCFD.H"
+                 #include <cmath>
+                 #include <iostream>    
+ 
+        #}; 
+                 
+    }
+
+    wall
+    {
+        type            noSlip;
+    }
+
+    axis
+    {
+        type            symmetry;
+    }
+
+    outlet
+    {
+        type            inletOutlet;
+        inletValue      uniform (0 0 0);
+    }
+
+    frontAndBackPlanes
+    {
+        type             empty;
+    }
+
+    #includeEtc "caseDicts/setConstraintTypes"
+}
+
+// ************************************************************************* //
